@@ -309,9 +309,112 @@ if (document.getElementById("statTotal")) {
     if (e.key === "Escape") document.getElementById("logModal")?.classList.remove("open");
   });
 
+
+  // ── Calendar ───────────────────────────────────────────────────────────
+  let calYear  = new Date().getFullYear();
+  let calMonth = new Date().getMonth(); // 0-indexed
+
+  function renderCalendar() {
+    const label = document.getElementById("calMonthLabel");
+    const grid  = document.getElementById("calGrid");
+    if (!label || !grid) return;
+
+    const monthNames = ["January","February","March","April","May","June",
+                        "July","August","September","October","November","December"];
+    label.textContent = `${monthNames[calMonth]} ${calYear}`;
+
+    // หา log ที่อยู่ในเดือนนี้ จัดกลุ่มตามวันที่
+    const logsByDate = {};
+    allLogs.forEach(l => {
+      const d = new Date(l.timestamp);
+      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+        const key = d.getDate();
+        if (!logsByDate[key]) logsByDate[key] = [];
+        logsByDate[key].push(l);
+      }
+    });
+
+    // หาวันแรกของเดือนและจำนวนวัน
+    const firstDay  = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const today     = new Date();
+
+    let html = "";
+
+    // empty cells ก่อนวันที่ 1
+    for (let i = 0; i < firstDay; i++) {
+      html += `<div class="cal-day empty"></div>`;
+    }
+
+    // วันในเดือน
+    for (let day = 1; day <= daysInMonth; day++) {
+      const isToday = today.getFullYear() === calYear &&
+                      today.getMonth() === calMonth &&
+                      today.getDate() === day;
+
+      const logs = logsByDate[day] || [];
+      const hasLog = logs.length > 0;
+
+      // หา mood หลักของวันนั้น (mood ล่าสุด)
+      const topMood = hasLog ? logs[logs.length - 1].mood : "";
+
+      // dots (max 3)
+      const dots = hasLog
+        ? `<div class="cal-dot-wrap">${logs.slice(0,3).map(() => `<div class="cal-dot"></div>`).join("")}</div>`
+        : "";
+
+      const classes = [
+        "cal-day",
+        isToday  ? "today"   : "",
+        hasLog   ? "has-log" : "",
+      ].filter(Boolean).join(" ");
+
+      const onclick = hasLog
+        ? `onclick="calDayClick(${calYear},${calMonth},${day})"`
+        : "";
+
+      html += `<div class="${classes}" ${hasLog ? `data-mood="${topMood}"` : ""} ${onclick}>
+        ${day}
+        ${dots}
+      </div>`;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  window.calDayClick = function(year, month, day) {
+    // กรอง log ของวันนั้นแล้วแสดงใน history
+    const target = new Date(year, month, day);
+    const next   = new Date(year, month, day + 1);
+    const filtered = allLogs.filter(l => {
+      const d = new Date(l.timestamp);
+      return d >= target && d < next;
+    });
+    if (!filtered.length) return;
+    if (filtered.length === 1) {
+      openModal(filtered[0].id);
+    } else {
+      // ถ้ามีหลาย log ในวันเดียว เปิด log ล่าสุด
+      openModal(filtered[filtered.length - 1].id);
+    }
+  };
+
+  document.getElementById("calPrev")?.addEventListener("click", () => {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
+  });
+
+  document.getElementById("calNext")?.addEventListener("click", () => {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  });
+
   // ── Dashboard loader ───────────────────────────────────────────────────
   async function loadDashboard() {
     await Promise.all([loadStats(), loadLogs(), loadRecommend()]);
+    renderCalendar();
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────

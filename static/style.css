@@ -942,3 +942,113 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   .modal-run-grid { grid-template-columns: repeat(3,1fr); gap: 8px; }
   .modal-run-item .run-val { font-size: 1rem; }
 }
+
+/* ── Calendar ───────────────────────────────────────────────────────── */
+.cal-nav {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 1.1rem;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.cal-nav:hover { border-color: var(--p1); color: var(--neon); }
+
+.cal-month-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem; font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cal-grid-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin: 14px 0 6px;
+  text-align: center;
+}
+.cal-grid-header span {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  position: relative;
+  cursor: default;
+  transition: all 0.15s ease;
+}
+
+.cal-day.has-log {
+  background: rgba(139,92,246,0.15);
+  border: 1px solid rgba(139,92,246,0.3);
+  color: var(--text);
+  cursor: pointer;
+}
+.cal-day.has-log:hover {
+  background: rgba(139,92,246,0.25);
+  border-color: var(--p1);
+  transform: scale(1.08);
+}
+
+.cal-day.today {
+  border: 1px solid rgba(139,92,246,0.5);
+  color: var(--neon);
+  font-weight: 700;
+}
+
+.cal-day.today.has-log {
+  background: rgba(139,92,246,0.2);
+  border-color: var(--p1);
+}
+
+.cal-day.empty { pointer-events: none; }
+
+/* dot indicator จำนวน log */
+.cal-dot-wrap {
+  position: absolute;
+  bottom: 4px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 2px;
+}
+.cal-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--neon);
+}
+
+/* mood color dots */
+.cal-day[data-mood="happy"]   .cal-dot { background: #10b981; }
+.cal-day[data-mood="hyped"]   .cal-dot { background: #f59e0b; }
+.cal-day[data-mood="blessed"] .cal-dot { background: #8b5cf6; }
+.cal-day[data-mood="neutral"] .cal-dot { background: #6b7280; }
+.cal-day[data-mood="tired"]   .cal-dot { background: #3b82f6; }
+.cal-day[data-mood="sad"]     .cal-dot { background: #60a5fa; }
+.cal-day[data-mood="angry"]   .cal-dot { background: #f43f5e; }
+.cal-day[data-mood="anxious"] .cal-dot { background: #fb923c; }
+
+@media (max-width: 479px) {
+  .cal-day { font-size: 0.7rem; border-radius: 6px; }
+  .cal-grid-header span { font-size: 0.6rem; }
+}
