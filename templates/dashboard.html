@@ -97,6 +97,44 @@
   </div>
 </div>
 
+<!-- Log Detail Modal -->
+<div id="logModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <div class="modal-header">
+      <div class="modal-emoji" id="modalEmoji"></div>
+      <div>
+        <div class="modal-mood" id="modalMood"></div>
+        <div class="modal-time" id="modalTime"></div>
+      </div>
+    </div>
+
+    <div class="modal-divider"></div>
+
+    <!-- Energy -->
+    <div class="modal-section">
+      <div class="modal-label">Energy</div>
+      <div class="modal-energy-bar">
+        <div class="modal-energy-fill" id="modalEnergyFill"></div>
+      </div>
+      <div class="modal-energy-val" id="modalEnergyVal"></div>
+    </div>
+
+    <!-- Note -->
+    <div class="modal-section" id="modalNoteSection">
+      <div class="modal-label">Note</div>
+      <div class="modal-note" id="modalNote"></div>
+    </div>
+
+    <!-- Workout -->
+    <div class="modal-section" id="modalWorkoutSection" style="display:none">
+      <div class="modal-label">Workout</div>
+      <div id="modalWorkoutContent"></div>
+    </div>
+  </div>
+</div>
+
 <script src="/static/script.js"></script>
 </body>
 </html>
