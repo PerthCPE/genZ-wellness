@@ -776,62 +776,24 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   .toast { bottom: max(24px, env(safe-area-inset-bottom)); }
 }
 
-อธิบายก่อนว่าจะแก้อะไรบ้าง:
-
-dashboard.html — เพิ่ม modal popup สำหรับแสดง detail
-style.css — เพิ่ม style modal
-script.js — เพิ่ม click handler เปิด modal + แสดงข้อมูล workout
-
-
-1. dashboard.html — เพิ่ม modal ก่อน </body>
-html<!-- Log Detail Modal -->
-<div id="logModal" class="modal-overlay" onclick="closeModal(event)">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-
-    <div class="modal-header">
-      <div class="modal-emoji" id="modalEmoji"></div>
-      <div>
-        <div class="modal-mood" id="modalMood"></div>
-        <div class="modal-time" id="modalTime"></div>
-      </div>
-    </div>
-
-    <div class="modal-divider"></div>
-
-    <!-- Energy -->
-    <div class="modal-section">
-      <div class="modal-label">Energy</div>
-      <div class="modal-energy-bar">
-        <div class="modal-energy-fill" id="modalEnergyFill"></div>
-      </div>
-      <div class="modal-energy-val" id="modalEnergyVal"></div>
-    </div>
-
-    <!-- Note -->
-    <div class="modal-section" id="modalNoteSection">
-      <div class="modal-label">Note</div>
-      <div class="modal-note" id="modalNote"></div>
-    </div>
-
-    <!-- Workout -->
-    <div class="modal-section" id="modalWorkoutSection" style="display:none">
-      <div class="modal-label">Workout</div>
-      <div id="modalWorkoutContent"></div>
-    </div>
-  </div>
-</div>
-
-2. style.css — เพิ่มที่ท้ายไฟล์
-css/* ── Modal ──────────────────────────────────────────────────────────── */
+/* ── Modal ──────────────────────────────────────────────────────────── */
 .modal-overlay {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 200;
   background: rgba(8,8,16,0.75);
   backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
-  opacity: 0; pointer-events: none;
+  opacity: 0;
+  pointer-events: none;
   transition: opacity 0.25s ease;
+  /* ป้องกัน Safari mobile คำนวณ vh ผิด */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
 
 .modal-overlay.open {
@@ -843,8 +805,12 @@ css/* ── Modal ────────────────────�
   border: 1px solid rgba(139,92,246,0.25);
   border-radius: var(--radius);
   padding: 32px;
-  width: 100%; max-width: 480px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
   position: relative;
+  margin: auto;
   box-shadow: 0 0 60px rgba(139,92,246,0.15);
   transform: translateY(20px);
   transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
