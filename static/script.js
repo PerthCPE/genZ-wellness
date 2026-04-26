@@ -310,111 +310,153 @@ if (document.getElementById("statTotal")) {
   });
 
 
-  // ── Calendar ───────────────────────────────────────────────────────────
-  let calYear  = new Date().getFullYear();
-  let calMonth = new Date().getMonth(); // 0-indexed
+  // ── Heatmap ────────────────────────────────────────────────────────────
+  function renderHeatmap() {
+    const grid   = document.getElementById("heatmapGrid");
+    const months = document.getElementById("heatmapMonths");
+    const title  = document.getElementById("heatmapTitle");
+    if (!grid) return;
 
-  function renderCalendar() {
-    const label = document.getElementById("calMonthLabel");
-    const grid  = document.getElementById("calGrid");
-    if (!label || !grid) return;
+    const year  = new Date().getFullYear();
+    const today = new Date();
+    today.setHours(23,59,59,999);
 
-    const monthNames = ["January","February","March","April","May","June",
-                        "July","August","September","October","November","December"];
-    label.textContent = `${monthNames[calMonth]} ${calYear}`;
-
-    // หา log ที่อยู่ในเดือนนี้ จัดกลุ่มตามวันที่
+    // จัดกลุ่ม log ตาม YYYY-MM-DD
     const logsByDate = {};
     allLogs.forEach(l => {
-      const d = new Date(l.timestamp);
-      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
-        const key = d.getDate();
-        if (!logsByDate[key]) logsByDate[key] = [];
-        logsByDate[key].push(l);
+      const d   = new Date(l.timestamp);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (!logsByDate[key]) logsByDate[key] = [];
+      logsByDate[key].push(l);
+    });
+
+    const totalLogs = allLogs.filter(l => new Date(l.timestamp).getFullYear() === year).length;
+    title.textContent = `${totalLogs} log${totalLogs !== 1 ? "s" : ""} in ${year}`;
+
+    // หาวันอาทิตย์แรกของปี (เริ่ม column แรก)
+    const jan1    = new Date(year, 0, 1);
+    const startDay = new Date(jan1);
+    startDay.setDate(jan1.getDate() - jan1.getDay()); // เลื่อนไปอาทิตย์ก่อนหน้า
+
+    const dec31   = new Date(year, 11, 31);
+    const endDay  = new Date(dec31);
+    endDay.setDate(dec31.getDate() + (6 - dec31.getDay()));
+
+    // สร้าง columns (แต่ละ column = 1 สัปดาห์)
+    const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const colData  = []; // [{date, cells:[]}]
+    const monthPos = {}; // month -> column index ที่เริ่ม
+
+    let cur = new Date(startDay);
+    let colIndex = 0;
+
+    while (cur <= endDay) {
+      const col = [];
+      for (let dow = 0; dow < 7; dow++) {
+        col.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
       }
+      // บันทึก column แรกของแต่ละเดือน
+      col.forEach(d => {
+        if (d.getFullYear() === year && d.getDate() === 1) {
+          monthPos[d.getMonth()] = colIndex;
+        }
+      });
+      colData.push(col);
+      colIndex++;
+    }
+
+    // render month labels
+    const totalCols = colData.length;
+    const cellSize  = 11 + 2; // width + gap
+    let monthHtml   = "";
+    for (let m = 0; m < 12; m++) {
+      const col = monthPos[m] ?? null;
+      if (col === null) continue;
+      const leftPx = col * cellSize;
+      monthHtml += `<div class="heatmap-month-label" style="width:${cellSize}px; margin-left:${m===0 ? leftPx : cellSize}px">${MONTH_NAMES[m]}</div>`;
+    }
+    // ใช้แบบ absolute positioning แทน
+    months.style.position = "relative";
+    months.style.height   = "16px";
+    months.style.minWidth = `${totalCols * cellSize}px`;
+    months.innerHTML = "";
+    for (let m = 0; m < 12; m++) {
+      const col = monthPos[m] ?? null;
+      if (col === null) continue;
+      const el = document.createElement("div");
+      el.className   = "heatmap-month-label";
+      el.textContent = MONTH_NAMES[m];
+      el.style.position = "absolute";
+      el.style.left     = `${col * cellSize}px`;
+      months.appendChild(el);
+    }
+
+    // max logs ใน 1 วัน (สำหรับ level)
+    const counts = Object.values(logsByDate).map(a => a.length);
+    const maxCount = Math.max(...counts, 1);
+
+    // render grid
+    grid.innerHTML = "";
+    colData.forEach(col => {
+      const colEl = document.createElement("div");
+      colEl.className = "heatmap-col";
+
+      col.forEach(d => {
+        const cell  = document.createElement("div");
+        cell.className = "heatmap-cell";
+
+        const inYear = d.getFullYear() === year;
+        const isFuture = d > today;
+
+        if (!inYear || isFuture) {
+          // วันนอกปีหรืออนาคต — แสดงเป็น empty
+          cell.style.opacity = "0.2";
+          colEl.appendChild(cell);
+          return;
+        }
+
+        const key  = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const logs = logsByDate[key] || [];
+        const count = logs.length;
+
+        // level 0-4
+        let level = 0;
+        if (count > 0) {
+          level = Math.min(4, Math.ceil((count / maxCount) * 4));
+        }
+        cell.dataset.level = level;
+
+        // today
+        const isToday = d.toDateString() === new Date().toDateString();
+        if (isToday) cell.classList.add("is-today");
+
+        // tooltip
+        const dateStr = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+        cell.dataset.tip = count > 0
+          ? `${count} log${count>1?"s":""} · ${dateStr}`
+          : dateStr;
+
+        if (count > 0) {
+          cell.classList.add("has-log");
+          cell.addEventListener("click", () => {
+            // เปิด modal log ล่าสุดของวันนั้น
+            const last = logs[logs.length - 1];
+            openModal(last.id);
+          });
+        }
+
+        colEl.appendChild(cell);
+      });
+
+      grid.appendChild(colEl);
     });
-
-    // หาวันแรกของเดือนและจำนวนวัน
-    const firstDay  = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const today     = new Date();
-
-    let html = "";
-
-    // empty cells ก่อนวันที่ 1
-    for (let i = 0; i < firstDay; i++) {
-      html += `<div class="cal-day empty"></div>`;
-    }
-
-    // วันในเดือน
-    for (let day = 1; day <= daysInMonth; day++) {
-      const isToday = today.getFullYear() === calYear &&
-                      today.getMonth() === calMonth &&
-                      today.getDate() === day;
-
-      const logs = logsByDate[day] || [];
-      const hasLog = logs.length > 0;
-
-      // หา mood หลักของวันนั้น (mood ล่าสุด)
-      const topMood = hasLog ? logs[logs.length - 1].mood : "";
-
-      // dots (max 3)
-      const dots = hasLog
-        ? `<div class="cal-dot-wrap">${logs.slice(0,3).map(() => `<div class="cal-dot"></div>`).join("")}</div>`
-        : "";
-
-      const classes = [
-        "cal-day",
-        isToday  ? "today"   : "",
-        hasLog   ? "has-log" : "",
-      ].filter(Boolean).join(" ");
-
-      const onclick = hasLog
-        ? `onclick="calDayClick(${calYear},${calMonth},${day})"`
-        : "";
-
-      html += `<div class="${classes}" ${hasLog ? `data-mood="${topMood}"` : ""} ${onclick}>
-        ${day}
-        ${dots}
-      </div>`;
-    }
-
-    grid.innerHTML = html;
   }
-
-  window.calDayClick = function(year, month, day) {
-    // กรอง log ของวันนั้นแล้วแสดงใน history
-    const target = new Date(year, month, day);
-    const next   = new Date(year, month, day + 1);
-    const filtered = allLogs.filter(l => {
-      const d = new Date(l.timestamp);
-      return d >= target && d < next;
-    });
-    if (!filtered.length) return;
-    if (filtered.length === 1) {
-      openModal(filtered[0].id);
-    } else {
-      // ถ้ามีหลาย log ในวันเดียว เปิด log ล่าสุด
-      openModal(filtered[filtered.length - 1].id);
-    }
-  };
-
-  document.getElementById("calPrev")?.addEventListener("click", () => {
-    calMonth--;
-    if (calMonth < 0) { calMonth = 11; calYear--; }
-    renderCalendar();
-  });
-
-  document.getElementById("calNext")?.addEventListener("click", () => {
-    calMonth++;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    renderCalendar();
-  });
 
   // ── Dashboard loader ───────────────────────────────────────────────────
   async function loadDashboard() {
     await Promise.all([loadStats(), loadLogs(), loadRecommend()]);
-    renderCalendar();
+    renderHeatmap();
   }
 
   // ── Stats ──────────────────────────────────────────────────────────────
