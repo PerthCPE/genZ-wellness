@@ -379,7 +379,6 @@ if (document.getElementById("statTotal")) {
     // ใช้แบบ absolute positioning แทน
     months.innerHTML = "";
     months.style.minWidth = `${colData.length * CELL}px`;
-    months.innerHTML = "";
     for (let m = 0; m < 12; m++) {
       const col = monthPos[m] ?? null;
       if (col === null) continue;
