@@ -6,9 +6,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 import json, os, uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import psycopg2, psycopg2.extras
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("Asia/Bangkok")
+
 
 load_dotenv()
 
@@ -76,7 +80,7 @@ async def add_log(log: MoodLog, response: Response,
     )
     row = dict(cur.fetchone())
     conn.commit(); conn.close()
-    row["timestamp"] = row["timestamp"].isoformat()
+    row["timestamp"] = row["timestamp"].astimezone(TZ).isoformat()
     return {"message": "Log saved ✨", "log": row}
 
 # ── GET /logs ─────────────────────────────────────────────────────────────────
@@ -93,7 +97,7 @@ async def get_logs(response: Response, mood: Optional[str] = Query(None),
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     for r in rows:
-        r["timestamp"] = r["timestamp"].isoformat()
+        r["timestamp"] = r["timestamp"].astimezone(TZ).isoformat()
     return rows
 
 # ── GET /stats ────────────────────────────────────────────────────────────────
