@@ -5,20 +5,18 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-import json
-import os
-import uuid
+import json, os, uuid
 from datetime import datetime
+import psycopg2, psycopg2.extras
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="Mood & Energy Tracker", version="2.0")
-
-# Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-DATA_FILE = "data.json"
-
-# ── Recommendations map ──────────────────────────────────────────────────────
+# ── Recommendations ───────────────────────────────────────────────────────────
 RECOMMENDATIONS = {
     "happy":   ["Share your vibe — call a friend 📞", "Start that creative project you've been ghosting 🎨", "Workout while you're in this energy ✨"],
     "sad":     ["Put on your comfort playlist 🎵", "Write down 3 things you're grateful for 📝", "Take a slow walk outside and breathe 🌿"],
@@ -29,41 +27,29 @@ RECOMMENDATIONS = {
     "blessed": ["Do something kind for a stranger 🌸", "Document this moment — write or take a photo 📸", "Plan your next adventure 🗺️"],
     "hyped":   ["Channel that into a workout or project 🔥", "Don't crash — eat something and hydrate 🥤", "Share the energy — it's contagious 🎉"],
 }
-
 DEFAULT_RECS = ["Take a mindful moment 🧘", "Hydrate and breathe 💧", "You're doing better than you think 💫"]
 
-# ── Data helpers ─────────────────────────────────────────────────────────────
-def load_data() -> list:
-    if not os.path.exists(DATA_FILE):
-        return []
-    with open(DATA_FILE, "r") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+# ── DB ────────────────────────────────────────────────────────────────────────
+def get_conn():
+    return psycopg2.connect(
+        os.environ["DATABASE_URL"],
+        cursor_factory=psycopg2.extras.RealDictCursor,
+        sslmode="require"
+    )
 
-def save_data(logs: list):
-    with open(DATA_FILE, "w") as f:
-        json.dump(logs, f, indent=2)
-
-# ── User ID helper ────────────────────────────────────────────────────────────
+# ── User ID ───────────────────────────────────────────────────────────────────
 def get_user_id(response: Response, user_id: Optional[str] = None) -> str:
     if not user_id:
         user_id = str(uuid.uuid4())
-        response.set_cookie(
-            key="user_id",
-            value=user_id,
-            max_age=60 * 60 * 24 * 365,  # 1 year
-            httponly=True,
-            samesite="lax"
-        )
+        response.set_cookie(key="user_id", value=user_id,
+                            max_age=60*60*24*365, httponly=True, samesite="lax")
     return user_id
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 class MoodLog(BaseModel):
-    mood: str
-    energy: int
-    note: Optional[str] = None
+    mood:    str
+    energy:  int
+    note:    Optional[str] = None
     workout: Optional[dict] = None
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
@@ -75,83 +61,71 @@ async def home(request: Request):
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
-# ── API ───────────────────────────────────────────────────────────────────────
+# ── POST /logs ────────────────────────────────────────────────────────────────
 @app.post("/logs", status_code=201)
-async def add_log(
-    log: MoodLog,
-    response: Response,
-    user_id: Optional[str] = Cookie(default=None)
-):
+async def add_log(log: MoodLog, response: Response,
+                  user_id: Optional[str] = Cookie(default=None)):
     if not (1 <= log.energy <= 10):
         return JSONResponse({"error": "Energy must be between 1 and 10"}, status_code=422)
-
     uid = get_user_id(response, user_id)
-    logs = load_data()
-    entry = {
-        "id": len(logs) + 1,
-        "user_id": uid,
-        "mood": log.mood.lower().strip(),
-        "energy": log.energy,
-        "note": log.note or "",
-        "workout": log.workout or None,
-        "timestamp": datetime.now().isoformat()
-    }
-    logs.append(entry)
-    save_data(logs)
-    return {"message": "Log saved ✨", "log": entry}
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO mood_logs (user_id,mood,energy,note,workout) VALUES (%s,%s,%s,%s,%s) RETURNING *",
+        (uid, log.mood.lower().strip(), log.energy, log.note,
+         json.dumps(log.workout) if log.workout else None)
+    )
+    row = dict(cur.fetchone())
+    conn.commit(); conn.close()
+    row["timestamp"] = row["timestamp"].isoformat()
+    return {"message": "Log saved ✨", "log": row}
 
+# ── GET /logs ─────────────────────────────────────────────────────────────────
 @app.get("/logs")
-async def get_logs(
-    response: Response,
-    mood: Optional[str] = Query(None),
-    user_id: Optional[str] = Cookie(default=None)
-):
+async def get_logs(response: Response, mood: Optional[str] = Query(None),
+                   user_id: Optional[str] = Cookie(default=None)):
     uid = get_user_id(response, user_id)
-    logs = load_data()
-    logs = [l for l in logs if l.get("user_id") == uid]
+    conn = get_conn(); cur = conn.cursor()
     if mood:
-        logs = [l for l in logs if l["mood"] == mood.lower().strip()]
-    return logs
+        cur.execute("SELECT * FROM mood_logs WHERE user_id=%s AND mood=%s ORDER BY id",
+                    (uid, mood.lower().strip()))
+    else:
+        cur.execute("SELECT * FROM mood_logs WHERE user_id=%s ORDER BY id", (uid,))
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    for r in rows:
+        r["timestamp"] = r["timestamp"].isoformat()
+    return rows
 
+# ── GET /stats ────────────────────────────────────────────────────────────────
 @app.get("/stats")
-async def get_stats(
-    response: Response,
-    user_id: Optional[str] = Cookie(default=None)
-):
+async def get_stats(response: Response,
+                    user_id: Optional[str] = Cookie(default=None)):
     uid = get_user_id(response, user_id)
-    logs = load_data()
-    logs = [l for l in logs if l.get("user_id") == uid]
-    if not logs:
-        return {"average_energy": 0, "total_logs": 0, "mood_breakdown": {}}
-
-    avg = round(sum(l["energy"] for l in logs) / len(logs), 2)
-    breakdown = {}
-    for l in logs:
-        breakdown[l["mood"]] = breakdown.get(l["mood"], 0) + 1
-
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) as total, AVG(energy) as avg FROM mood_logs WHERE user_id=%s", (uid,))
+    s = dict(cur.fetchone())
+    cur.execute("SELECT mood, COUNT(*) as cnt FROM mood_logs WHERE user_id=%s GROUP BY mood", (uid,))
+    bd = {r["mood"]: r["cnt"] for r in cur.fetchall()}
+    conn.close()
     return {
-        "average_energy": avg,
-        "total_logs": len(logs),
-        "mood_breakdown": breakdown
+        "total_logs": s["total"],
+        "average_energy": round(float(s["avg"] or 0), 2),
+        "mood_breakdown": bd
     }
 
+# ── GET /recommend ────────────────────────────────────────────────────────────
 @app.get("/recommend")
 async def recommend(mood: Optional[str] = Query(None)):
     import random
-    if mood and mood.lower() in RECOMMENDATIONS:
-        suggestions = RECOMMENDATIONS[mood.lower()]
-    else:
-        suggestions = DEFAULT_RECS
+    suggestions = RECOMMENDATIONS.get(mood.lower(), DEFAULT_RECS) if mood else DEFAULT_RECS
     return {"activity": random.choice(suggestions), "mood": mood or "unknown"}
 
+# ── DELETE /logs/{id} ─────────────────────────────────────────────────────────
 @app.delete("/logs/{log_id}")
-async def delete_log(
-    log_id: int,
-    response: Response,
-    user_id: Optional[str] = Cookie(default=None)
-):
+async def delete_log(log_id: int, response: Response,
+                     user_id: Optional[str] = Cookie(default=None)):
     uid = get_user_id(response, user_id)
-    logs = load_data()
-    logs = [l for l in logs if not (l.get("id") == log_id and l.get("user_id") == uid)]
-    save_data(logs)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("DELETE FROM mood_logs WHERE id=%s AND user_id=%s", (log_id, uid))
+    conn.commit(); conn.close()
     return {"message": "Deleted"}

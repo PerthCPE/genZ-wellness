@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Cookie, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
@@ -7,18 +7,14 @@ from pydantic import BaseModel
 from typing import Optional
 import json
 import os
+import uuid
 from datetime import datetime
-import os
 
 app = FastAPI(title="Mood & Energy Tracker", version="2.0")
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-
-port = int(os.environ.get("PORT", 10000))
-app.run(host="0.0.0.0", port=port)
-
 
 DATA_FILE = "data.json"
 
@@ -50,11 +46,25 @@ def save_data(logs: list):
     with open(DATA_FILE, "w") as f:
         json.dump(logs, f, indent=2)
 
+# ── User ID helper ────────────────────────────────────────────────────────────
+def get_user_id(response: Response, user_id: Optional[str] = None) -> str:
+    if not user_id:
+        user_id = str(uuid.uuid4())
+        response.set_cookie(
+            key="user_id",
+            value=user_id,
+            max_age=60 * 60 * 24 * 365,  # 1 year
+            httponly=True,
+            samesite="lax"
+        )
+    return user_id
+
 # ── Schemas ───────────────────────────────────────────────────────────────────
 class MoodLog(BaseModel):
     mood: str
     energy: int
     note: Optional[str] = None
+    workout: Optional[dict] = None
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
 @app.get("/")
@@ -65,18 +75,25 @@ async def home(request: Request):
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
-# ── API v1 + v2 ───────────────────────────────────────────────────────────────
+# ── API ───────────────────────────────────────────────────────────────────────
 @app.post("/logs", status_code=201)
-async def add_log(log: MoodLog):
+async def add_log(
+    log: MoodLog,
+    response: Response,
+    user_id: Optional[str] = Cookie(default=None)
+):
     if not (1 <= log.energy <= 10):
         return JSONResponse({"error": "Energy must be between 1 and 10"}, status_code=422)
 
+    uid = get_user_id(response, user_id)
     logs = load_data()
     entry = {
         "id": len(logs) + 1,
+        "user_id": uid,
         "mood": log.mood.lower().strip(),
         "energy": log.energy,
         "note": log.note or "",
+        "workout": log.workout or None,
         "timestamp": datetime.now().isoformat()
     }
     logs.append(entry)
@@ -84,15 +101,26 @@ async def add_log(log: MoodLog):
     return {"message": "Log saved ✨", "log": entry}
 
 @app.get("/logs")
-async def get_logs(mood: Optional[str] = Query(None)):
+async def get_logs(
+    response: Response,
+    mood: Optional[str] = Query(None),
+    user_id: Optional[str] = Cookie(default=None)
+):
+    uid = get_user_id(response, user_id)
     logs = load_data()
+    logs = [l for l in logs if l.get("user_id") == uid]
     if mood:
         logs = [l for l in logs if l["mood"] == mood.lower().strip()]
     return logs
 
 @app.get("/stats")
-async def get_stats():
+async def get_stats(
+    response: Response,
+    user_id: Optional[str] = Cookie(default=None)
+):
+    uid = get_user_id(response, user_id)
     logs = load_data()
+    logs = [l for l in logs if l.get("user_id") == uid]
     if not logs:
         return {"average_energy": 0, "total_logs": 0, "mood_breakdown": {}}
 
@@ -117,8 +145,13 @@ async def recommend(mood: Optional[str] = Query(None)):
     return {"activity": random.choice(suggestions), "mood": mood or "unknown"}
 
 @app.delete("/logs/{log_id}")
-async def delete_log(log_id: int):
+async def delete_log(
+    log_id: int,
+    response: Response,
+    user_id: Optional[str] = Cookie(default=None)
+):
+    uid = get_user_id(response, user_id)
     logs = load_data()
-    logs = [l for l in logs if l.get("id") != log_id]
+    logs = [l for l in logs if not (l.get("id") == log_id and l.get("user_id") == uid)]
     save_data(logs)
     return {"message": "Deleted"}
