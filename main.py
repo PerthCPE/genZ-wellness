@@ -8,12 +8,17 @@ from typing import Optional
 import json
 import os
 from datetime import datetime
+import os
 
 app = FastAPI(title="Mood & Energy Tracker", version="2.0")
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+port = int(os.environ.get("PORT", 10000))
+app.run(host="0.0.0.0", port=port)
+
 
 DATA_FILE = "data.json"
 
