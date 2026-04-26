@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#080810" />
+  <title>Dashboard · Mood & Energy Tracker</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">✦ moodboard</div>
+  <div class="nav-links">
+    <a href="/">Log</a>
+    <a href="/dashboard" class="active">Dashboard</a>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Hero -->
+  <div class="hero" style="margin-bottom:36px">
+    <div class="hero-tag">Your Overview</div>
+    <h1>The vibe report <span style="-webkit-text-fill-color:initial; background:none;">✦</span></h1>
+    <p>All your moods, summarized and stylish.</p>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <!--<div class="stat-icon">📝</div>-->
+      <div class="stat-val" id="statTotal">–</div>
+      <div class="stat-label">Total Logs</div>
+    </div>
+    <div class="stat-card">
+      <!--<div class="stat-icon">⚡</div>-->
+      <div class="stat-val" id="statAvg">–</div>
+      <div class="stat-label">Avg Energy</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="statTop" style="font-size:2rem; -webkit-text-fill-color:initial; background:none;">–</div>
+      <div class="stat-label">Top Mood</div>
+    </div>
+  </div>
+
+  <!-- Recommend -->
+  <div class="recommend-card" id="recommendCard">
+    <div class="rec-icon" id="recIcon">💡</div>
+    <div class="rec-text">
+      <div class="rec-label">Today's Suggestion</div>
+      <div id="recText">Loading your vibe recommendation…</div>
+    </div>
+    <button id="refreshRec" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;transition:transform 0.4s ease;margin-left:auto;flex-shrink:0" title="New suggestion">↻</button>
+  </div>
+
+  <!-- Two column -->
+  <div class="two-col" style="margin-bottom:32px">
+    <!-- Breakdown -->
+    <div class="card">
+      <div class="card-title">Mood breakdown</div>
+      <div id="breakdownList" class="breakdown-list">
+        <div class="skeleton" style="height:12px;margin-bottom:10px"></div>
+        <div class="skeleton" style="height:12px;margin-bottom:10px;width:80%"></div>
+        <div class="skeleton" style="height:12px;width:60%"></div>
+      </div>
+    </div>
+
+    <!-- Quick tip -->
+    <div class="card" style="display:flex;flex-direction:column;justify-content:space-between">
+      <div>
+        <div class="card-title">Quick Tips</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:.85rem;color:var(--muted)">
+          <div>💧 Drink water before checking your phone in the morning</div>
+          <div>🌙 Log your mood before bed for better insight</div>
+          <div>🎵 Music directly affects your energy level</div>
+          <div>🧘 3 deep breaths reset your nervous system</div>
+        </div>
+      </div>
+      <a href="/" class="btn btn-primary" style="margin-top:20px;text-decoration:none;font-size:.85rem">+ Log New Entry</a>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="section-head">
+    <h2>History</h2>
+    <span id="filterWrap" class="filter-wrap" style="margin-bottom:0"></span>
+  </div>
+  <div style="margin-bottom:12px"></div>
+  <div id="historyList" class="history-list">
+    <div class="skeleton" style="height:64px;margin-bottom:10px;border-radius:10px"></div>
+    <div class="skeleton" style="height:64px;margin-bottom:10px;border-radius:10px"></div>
+    <div class="skeleton" style="height:64px;border-radius:10px"></div>
+  </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

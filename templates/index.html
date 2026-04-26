@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#080810" />
+  <title>Mood & Energy Tracker</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>" />
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">✦ moodboard</div>
+  <div class="nav-links">
+    <a href="/" class="active">Log</a>
+    <a href="/dashboard">Dashboard</a>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-tag">Daily Check-in</div>
+    <h1>How are you<br>feeling today?</h1>
+    <p>Track your vibe, build self-awareness ✨</p>
+  </div>
+
+  <!-- Mood Selector -->
+  <div class="card" style="margin-bottom:20px; animation-delay:0.05s">
+    <div class="card-title">Pick your mood</div>
+    <div id="moodGrid" class="mood-grid"></div>
+  </div>
+
+  <!-- Energy -->
+  <div class="card" style="margin-bottom:20px; animation-delay:0.1s">
+    <div class="card-title">Energy level</div>
+    <div class="slider-wrap">
+      <div class="slider-header">
+        <label>How much energy do you have?</label>
+        <div class="energy-val"><span id="energyVal">5</span></div>
+      </div>
+      <input type="range" id="energySlider" min="1" max="10" value="5" />
+      <div class="energy-labels"><span>💀 drained</span><span>⚡ full send</span></div>
+    </div>
+  </div>
+
+  <!-- Workout
+  <div class="card" style="margin-bottom: 20px; animation-delay: 0.15s;">
+    <div class="card-title">Workout</div>
+    <div class="card-content">
+      <label for="workout">Select Activity</label>
+      <select name="workout" id="workout" class="combo">
+        <option value="">-- Choose workout --</option>
+        <option value="weight">Weight Training</option>
+        <option value="run">Run</option>
+        <option value="other">Other Activities</option>
+      </select>
+    </div> 
+  </div> -->
+
+  <!-- Workout -->
+  <div class="card" style="margin-bottom: 20px; animation-delay: 0.15s;">
+    <div class="card-title">Workout</div>
+    <div class="card-content">
+      <label for="workout">Select Activity</label>
+      <select name="workout" id="workout" class="combo">
+        <option value="">-- Choose workout --</option>
+        <option value="weight">Weight Training</option>
+        <option value="run">Run</option>
+        <option value="other">Other Activities</option>
+      </select>
+
+      <!-- Weight Training -->
+      <div id="workout-weight" class="workout-panel" style="display:none; margin-top:18px;">
+        <table class="exercise-table" id="exerciseTable">
+          <thead>
+            <tr>
+              <th>Exercise</th>
+              <th>Sets</th>
+              <th>Reps</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="exerciseBody">
+            <tr>
+              <td><input type="text" class="ex-name" placeholder="e.g. Bench Press" /></td>
+              <td><input type="number" class="ex-sets" placeholder="3" min="1" /></td>
+              <td><input type="number" class="ex-reps" placeholder="10" min="1" /></td>
+              <td><button class="row-del" onclick="deleteExRow(this)" title="Remove">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="btn-add-row" id="addExRow" type="button">+ Add Exercise</button>
+      </div>
+
+      <!-- Run -->
+      <div id="workout-run" class="workout-panel" style="display:none; margin-top:18px;">
+        <div class="run-grid">
+          <div class="run-field">
+            <label>Duration (min)</label>
+            <input type="number" id="runDuration" placeholder="e.g. 30" min="1" />
+          </div>
+          <div class="run-field">
+            <label>Distance (km)</label>
+            <input type="number" id="runDistance" placeholder="e.g. 5.0" min="0.01" step="0.01" />
+          </div>
+          <div class="run-field">
+            <label>Pace (min/km)</label>
+            <div class="pace-display" id="paceDisplay">–</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other -->
+      <div id="workout-other" class="workout-panel" style="display:none; margin-top:18px;">
+        <label>Describe your activity</label>
+        <input type="text" id="otherActivity" placeholder="e.g. Yoga, Swimming, Cycling…" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="card" style="margin-bottom:20px; animation-delay:0.20s">
+    <div class="card-title">Add a note (optional)</div>
+    <textarea id="noteInput" rows="3" placeholder="What's on your mind? No filter needed…"></textarea>
+  </div>
+
+  <!-- Submit -->
+  <button class="btn btn-primary" id="submitBtn" disabled style="animation:fadeUp 0.6s 0.2s ease both; opacity:0; animation-fill-mode:both">
+    Log My Vibe ✦
+  </button>
+
+  <div class="divider"></div>
+
+  <!-- Recent -->
+  <div class="section-head" style="animation:fadeUp 0.6s 0.25s ease both; opacity:0; animation-fill-mode:both">
+    <h2>Latest Entry</h2>
+    <a href="/dashboard" style="font-size:.8rem;color:var(--neon);text-decoration:none;font-weight:500">View all →</a>
+  </div>
+  <div id="recentWrap"></div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

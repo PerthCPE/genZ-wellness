@@ -1,0 +1,343 @@
+/* ── shared.js ── runs on both pages ─────────────────────────────────────── */
+
+const MOOD_MAP = {
+  happy:   "😁",
+  blessed: "😇",
+  hyped:   "🤩",
+  neutral: "😐",
+  tired:   "😴",
+  sad:     "😭",
+  angry:   "😡",
+  anxious: "😰",
+};
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimeout;
+function showToast(msg, type = "success") {
+  let t = document.querySelector(".toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  clearTimeout(toastTimeout);
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => { requestAnimationFrame(() => { t.classList.add("show"); }); });
+  toastTimeout = setTimeout(() => { t.classList.remove("show"); }, 3000);
+}
+
+// ── Format date ────────────────────────────────────────────────────────────
+function formatTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " +
+         d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INDEX PAGE
+// ══════════════════════════════════════════════════════════════════════════════
+if (document.getElementById("moodGrid")) {
+  let selectedMood = null;
+
+  // ── Build mood buttons ─────────────────────────────────────────────────
+  const grid = document.getElementById("moodGrid");
+  Object.entries(MOOD_MAP).forEach(([mood, emoji]) => {
+    const btn = document.createElement("button");
+    btn.className = "mood-btn";
+    btn.dataset.mood = mood;
+    btn.innerHTML = `<span class="emoji">${emoji}</span><span class="label">${mood}</span>`;
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedMood = mood;
+      updateBtn();
+    });
+    grid.appendChild(btn);
+  });
+
+  // ── Energy slider ──────────────────────────────────────────────────────
+  const slider = document.getElementById("energySlider");
+  const valDisplay = document.getElementById("energyVal");
+  slider.addEventListener("input", () => { valDisplay.textContent = slider.value; });
+
+  // ── Submit button state ────────────────────────────────────────────────
+  function updateBtn() {
+    document.getElementById("submitBtn").disabled = !selectedMood;
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────
+   document.getElementById("submitBtn").addEventListener("click", async () => {
+    if (!selectedMood) return;
+    const note = document.getElementById("noteInput").value.trim();
+    const energy = parseInt(slider.value);
+    const workout = collectWorkout();   // ← add this
+
+    try {
+      const res = await fetch("/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mood: selectedMood, energy, note: note || null, workout })  // ← add workout
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Vibe logged ✨");
+        document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("selected"));
+        selectedMood = null;
+        slider.value = 5; valDisplay.textContent = 5;
+        document.getElementById("noteInput").value = "";
+        workoutSelect.value = "";
+        Object.values(panels).forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = "none";
+        });
+        // reset exercise table to one blank row
+        document.getElementById("exerciseBody").innerHTML = `<tr>
+          <td><input type="text" class="ex-name" placeholder="e.g. Bench Press" /></td>
+          <td><input type="number" class="ex-sets" placeholder="3" min="1" /></td>
+          <td><input type="number" class="ex-reps" placeholder="10" min="1" /></td>
+          <td><button class="row-del" onclick="deleteExRow(this)" title="Remove">✕</button></td>
+        </tr>`;
+        if (runDuration) runDuration.value = "";
+        if (runDistance) runDistance.value = "";
+        const paceEl = document.getElementById("paceDisplay");
+        if (paceEl) paceEl.textContent = "–";
+        updateBtn();
+        loadRecentLog();
+      } else {
+        showToast(data.error || "Something broke 💀", "error");
+      }
+    } catch (e) {
+      showToast("Can't reach server 🌐", "error");
+    }
+  });
+
+  // ── Recent log preview ─────────────────────────────────────────────────
+  async function loadRecentLog() {
+    try {
+      const logs = await fetch("/logs").then(r => r.json());
+      const wrap = document.getElementById("recentWrap");
+      if (!logs.length) { wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🌙</div><p>No logs yet — start tracking your vibe</p></div>`; return; }
+      const last = logs[logs.length - 1];
+      wrap.innerHTML = `
+        <div class="log-item" style="animation:none">
+          <div class="log-emoji">${MOOD_MAP[last.mood] || "😶"}</div>
+          <div class="log-info">
+            <div class="log-mood">${last.mood}</div>
+            <div class="log-note">${last.note || "No note"}</div>
+          </div>
+          <div class="log-meta">
+            <div class="log-energy">${last.energy}/10</div>
+            <div class="log-time">${formatTime(last.timestamp)}</div>
+          </div>
+        </div>`;
+    } catch {}
+  }
+  loadRecentLog();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DASHBOARD PAGE
+// ══════════════════════════════════════════════════════════════════════════════
+if (document.getElementById("statTotal")) {
+  let allLogs = [];
+  let activeFilter = "all";
+
+  async function loadDashboard() {
+    await Promise.all([loadStats(), loadLogs(), loadRecommend()]);
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const s = await fetch("/stats").then(r => r.json());
+      document.getElementById("statTotal").textContent = s.total_logs;
+      document.getElementById("statAvg").textContent = s.average_energy || "–";
+
+      const breakdown = s.mood_breakdown || {};
+      const max = Math.max(...Object.values(breakdown), 1);
+      const topMood = Object.entries(breakdown).sort((a,b) => b[1]-a[1])[0];
+      const statTop = document.getElementById("statTop");
+      if (statTop) {
+        statTop.textContent = topMood ? MOOD_MAP[topMood[0]] : "–";
+      }
+
+      // Breakdown bars
+      const list = document.getElementById("breakdownList");
+      if (!Object.keys(breakdown).length) { list.innerHTML = `<div class="empty-state" style="padding:20px 0"><p>No data yet</p></div>`; return; }
+      list.innerHTML = Object.entries(breakdown)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([mood,count]) => `
+          <div class="breakdown-item">
+            <div class="breakdown-label">${MOOD_MAP[mood]||"😶"} <span style="font-size:.75rem;color:var(--muted);text-transform:capitalize">${mood}</span></div>
+            <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:0%" data-pct="${Math.round(count/max*100)}%"></div></div>
+            <div class="breakdown-count">${count}</div>
+          </div>`)
+        .join("");
+      // animate bars after render
+      requestAnimationFrame(() => {
+        document.querySelectorAll(".breakdown-bar").forEach(b => {
+          b.style.width = b.dataset.pct;
+        });
+      });
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Logs ───────────────────────────────────────────────────────────────
+  async function loadLogs() {
+    try {
+      allLogs = await fetch("/logs").then(r => r.json());
+      renderLogs();
+      buildFilters();
+    } catch {}
+  }
+
+  function renderLogs() {
+    const list = document.getElementById("historyList");
+    let logs = [...allLogs].reverse();
+    if (activeFilter !== "all") logs = logs.filter(l => l.mood === activeFilter);
+
+    if (!logs.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No logs found</p></div>`;
+      return;
+    }
+    list.innerHTML = logs.map((l, i) => `
+      <div class="log-item" style="animation-delay:${i * 0.05}s">
+        <div class="log-emoji">${MOOD_MAP[l.mood]||"😶"}</div>
+        <div class="log-info">
+          <div class="log-mood">${l.mood}</div>
+          <div class="log-note">${l.note || "–"}</div>
+        </div>
+        <div class="log-meta">
+          <div class="log-energy">${l.energy}/10</div>
+          <div class="log-time">${formatTime(l.timestamp)}</div>
+        </div>
+        <button class="log-delete" onclick="deleteLog(${l.id})" title="Delete">✕</button>
+      </div>`).join("");
+  }
+
+  function buildFilters() {
+    const moods = [...new Set(allLogs.map(l => l.mood))];
+    const wrap = document.getElementById("filterWrap");
+    wrap.innerHTML = `<button class="chip ${activeFilter==='all'?'active':''}" onclick="setFilter('all')">All</button>` +
+      moods.map(m => `<button class="chip ${activeFilter===m?'active':''}" onclick="setFilter('${m}')">${MOOD_MAP[m]||"😶"} ${m}</button>`).join("");
+  }
+
+  window.setFilter = function(f) {
+    activeFilter = f;
+    renderLogs();
+    buildFilters();
+  };
+
+  window.deleteLog = async function(id) {
+    if (!confirm("Delete this log?")) return;
+    await fetch(`/logs/${id}`, { method: "DELETE" });
+    showToast("Deleted 🗑️");
+    loadDashboard();
+  };
+
+  // ── Recommend ──────────────────────────────────────────────────────────
+  async function loadRecommend(mood) {
+    try {
+      const url = mood ? `/recommend?mood=${mood}` : "/recommend";
+      const r = await fetch(url).then(res => res.json());
+      const parts = (r.activity || "").split(" ");
+      const lastWord = parts[parts.length - 1];
+      const isEmoji = /\p{Emoji}/u.test(lastWord);
+      const icon = isEmoji ? lastWord : "💡";
+      const text = isEmoji ? parts.slice(0, -1).join(" ") : r.activity;
+      document.getElementById("recIcon").textContent = icon;
+      document.getElementById("recText").textContent = text;
+    } catch {}
+  }
+
+  document.getElementById("refreshRec")?.addEventListener("click", () => {
+    loadRecommend();
+    const btn = document.getElementById("refreshRec");
+    btn.style.transform = "rotate(360deg)";
+    setTimeout(() => { btn.style.transform = ""; }, 400);
+  });
+
+  loadDashboard();
+}
+
+const workoutSelect = document.getElementById("workout");
+  const panels = { weight: "workout-weight", run: "workout-run", other: "workout-other" };
+
+  workoutSelect.addEventListener("change", () => {
+    Object.values(panels).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    const active = panels[workoutSelect.value];
+    if (active) document.getElementById(active).style.display = "block";
+  });
+
+  // Add exercise row
+  document.getElementById("addExRow")?.addEventListener("click", () => {
+    const tbody = document.getElementById("exerciseBody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" class="ex-name" placeholder="e.g. Squat" /></td>
+      <td><input type="number" class="ex-sets" placeholder="3" min="1" /></td>
+      <td><input type="number" class="ex-reps" placeholder="10" min="1" /></td>
+      <td><button class="row-del" onclick="deleteExRow(this)" title="Remove">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  window.deleteExRow = function(btn) {
+    const tbody = document.getElementById("exerciseBody");
+    if (tbody.rows.length > 1) btn.closest("tr").remove();
+  };
+
+  // Pace calculator
+  const runDuration = document.getElementById("runDuration");
+  const runDistance = document.getElementById("runDistance");
+  function calcPace() {
+    const d = parseFloat(runDistance?.value);
+    const t = parseFloat(runDuration?.value);
+    const display = document.getElementById("paceDisplay");
+    if (!display) return;
+    if (d > 0 && t > 0) {
+      const paceMin = Math.floor(t / d);
+      const paceSec = Math.round((t / d - paceMin) * 60);
+      display.textContent = `${paceMin}:${String(paceSec).padStart(2, "0")}`;
+    } else {
+      display.textContent = "–";
+    }
+  }
+  runDuration?.addEventListener("input", calcPace);
+  runDistance?.addEventListener("input", calcPace);
+
+  // ── Collect workout data ───────────────────────────────────────────────
+  function collectWorkout() {
+    const type = workoutSelect.value;
+    if (!type) return null;
+
+    if (type === "weight") {
+      const rows = document.querySelectorAll("#exerciseBody tr");
+      const exercises = [];
+      rows.forEach(r => {
+        const name = r.querySelector(".ex-name")?.value.trim();
+        const sets = parseInt(r.querySelector(".ex-sets")?.value);
+        const reps = parseInt(r.querySelector(".ex-reps")?.value);
+        if (name) exercises.push({ name, sets: sets || null, reps: reps || null });
+      });
+      return { type: "weight", exercises };
+    }
+
+    if (type === "run") {
+      return {
+        type: "run",
+        duration_min: parseFloat(runDuration.value) || null,
+        distance_km: parseFloat(runDistance.value) || null,
+        pace: document.getElementById("paceDisplay").textContent
+      };
+    }
+
+    if (type === "other") {
+      return { type: "other", activity: document.getElementById("otherActivity").value.trim() || null };
+    }
+
+    return null;
+  }
