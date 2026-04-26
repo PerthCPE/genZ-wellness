@@ -377,8 +377,10 @@ if (document.getElementById("statTotal")) {
       monthHtml += `<div class="heatmap-month-label" style="width:${cellSize}px; margin-left:${m===0 ? leftPx : cellSize}px">${MONTH_NAMES[m]}</div>`;
     }
     // ใช้แบบ absolute positioning แทน
-    months.innerHTML = "";
+    months.style.position = "relative";
+    months.style.height   = "16px";
     months.style.minWidth = `${colData.length * CELL}px`;
+    months.innerHTML = "";
     for (let m = 0; m < 12; m++) {
       const col = monthPos[m] ?? null;
       if (col === null) continue;
