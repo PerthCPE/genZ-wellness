@@ -312,146 +312,118 @@ if (document.getElementById("statTotal")) {
 
   // ── Heatmap ────────────────────────────────────────────────────────────
   function renderHeatmap() {
-    const grid   = document.getElementById("heatmapGrid");
-    const months = document.getElementById("heatmapMonths");
-    const title  = document.getElementById("heatmapTitle");
-    if (!grid) return;
+  const grid   = document.getElementById("heatmapGrid");
+  const months = document.getElementById("heatmapMonths");
+  const title  = document.getElementById("heatmapTitle");
+  if (!grid) return;
 
-    const year  = new Date().getFullYear();
-    const today = new Date();
-    today.setHours(23,59,59,999);
+  const CELL = 13; // 11px + 2px gap
 
-    // จัดกลุ่ม log ตาม YYYY-MM-DD
-    const logsByDate = {};
-    allLogs.forEach(l => {
-      const d   = new Date(l.timestamp);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      if (!logsByDate[key]) logsByDate[key] = [];
-      logsByDate[key].push(l);
-    });
+  const year  = new Date().getFullYear();
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
 
-    const totalLogs = allLogs.filter(l => new Date(l.timestamp).getFullYear() === year).length;
-    title.textContent = `${totalLogs} log${totalLogs !== 1 ? "s" : ""} in ${year}`;
+  const logsByDate = {};
+  allLogs.forEach(l => {
+    const d   = new Date(l.timestamp);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (!logsByDate[key]) logsByDate[key] = [];
+    logsByDate[key].push(l);
+  });
 
-    // หาวันอาทิตย์แรกของปี (เริ่ม column แรก)
-    const jan1    = new Date(year, 0, 1);
-    const startDay = new Date(jan1);
-    startDay.setDate(jan1.getDate() - jan1.getDay()); // เลื่อนไปอาทิตย์ก่อนหน้า
+  const totalLogs = allLogs.filter(l => new Date(l.timestamp).getFullYear() === year).length;
+  title.textContent = `${totalLogs} log${totalLogs !== 1 ? "s" : ""} in ${year}`;
 
-    const dec31   = new Date(year, 11, 31);
-    const endDay  = new Date(dec31);
-    endDay.setDate(dec31.getDate() + (6 - dec31.getDay()));
+  const jan1     = new Date(year, 0, 1);
+  const startDay = new Date(jan1);
+  startDay.setDate(jan1.getDate() - jan1.getDay());
 
-    // สร้าง columns (แต่ละ column = 1 สัปดาห์)
-    const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const colData  = []; // [{date, cells:[]}]
-    const monthPos = {}; // month -> column index ที่เริ่ม
+  const dec31  = new Date(year, 11, 31);
+  const endDay = new Date(dec31);
+  endDay.setDate(dec31.getDate() + (6 - dec31.getDay()));
 
-    let cur = new Date(startDay);
-    let colIndex = 0;
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const colData  = [];
+  const monthPos = {};
+  let cur = new Date(startDay);
+  let colIndex = 0;
 
-    while (cur <= endDay) {
-      const col = [];
-      for (let dow = 0; dow < 7; dow++) {
-        col.push(new Date(cur));
-        cur.setDate(cur.getDate() + 1);
+  while (cur <= endDay) {
+    const col = [];
+    for (let dow = 0; dow < 7; dow++) {
+      col.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    col.forEach(d => {
+      if (d.getFullYear() === year && d.getDate() === 1) {
+        monthPos[d.getMonth()] = colIndex;
       }
-      // บันทึก column แรกของแต่ละเดือน
-      col.forEach(d => {
-        if (d.getFullYear() === year && d.getDate() === 1) {
-          monthPos[d.getMonth()] = colIndex;
-        }
-      });
-      colData.push(col);
-      colIndex++;
-    }
-
-    // render month labels
-    const totalCols = colData.length;
-    const cellSize  = 11 + 2; // width + gap
-    let monthHtml   = "";
-    for (let m = 0; m < 12; m++) {
-      const col = monthPos[m] ?? null;
-      if (col === null) continue;
-      const leftPx = col * cellSize;
-      monthHtml += `<div class="heatmap-month-label" style="width:${cellSize}px; margin-left:${m===0 ? leftPx : cellSize}px">${MONTH_NAMES[m]}</div>`;
-    }
-    // ใช้แบบ absolute positioning แทน
-    months.style.position = "relative";
-    months.style.height   = "16px";
-    months.style.minWidth = `${colData.length * CELL}px`;
-    months.innerHTML = "";
-    for (let m = 0; m < 12; m++) {
-      const col = monthPos[m] ?? null;
-      if (col === null) continue;
-      const el = document.createElement("div");
-      el.className   = "heatmap-month-label";
-      el.textContent = MONTH_NAMES[m];
-      el.style.position = "absolute";
-      el.style.left     = `${col * cellSize}px`;
-      months.appendChild(el);
-    }
-
-    // max logs ใน 1 วัน (สำหรับ level)
-    const counts = Object.values(logsByDate).map(a => a.length);
-    const maxCount = Math.max(...counts, 1);
-
-    // render grid
-    grid.innerHTML = "";
-    colData.forEach(col => {
-      const colEl = document.createElement("div");
-      colEl.className = "heatmap-col";
-
-      col.forEach(d => {
-        const cell  = document.createElement("div");
-        cell.className = "heatmap-cell";
-
-        const inYear = d.getFullYear() === year;
-        const isFuture = d > today;
-
-        if (!inYear || isFuture) {
-          // วันนอกปีหรืออนาคต — แสดงเป็น empty
-          cell.style.opacity = "0.2";
-          colEl.appendChild(cell);
-          return;
-        }
-
-        const key  = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        const logs = logsByDate[key] || [];
-        const count = logs.length;
-
-        // level 0-4
-        let level = 0;
-        if (count > 0) {
-          level = Math.min(4, Math.ceil((count / maxCount) * 4));
-        }
-        cell.dataset.level = level;
-
-        // today
-        const isToday = d.toDateString() === new Date().toDateString();
-        if (isToday) cell.classList.add("is-today");
-
-        // tooltip
-        const dateStr = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
-        cell.dataset.tip = count > 0
-          ? `${count} log${count>1?"s":""} · ${dateStr}`
-          : dateStr;
-
-        if (count > 0) {
-          cell.classList.add("has-log");
-          cell.addEventListener("click", () => {
-            // เปิด modal log ล่าสุดของวันนั้น
-            const last = logs[logs.length - 1];
-            openModal(last.id);
-          });
-        }
-
-        colEl.appendChild(cell);
-      });
-
-      grid.appendChild(colEl);
     });
+    colData.push(col);
+    colIndex++;
   }
+
+  // ── Month labels ──
+  months.innerHTML = "";
+  months.style.position = "relative";
+  months.style.height   = "16px";
+  months.style.minWidth = `${colData.length * CELL}px`;
+  for (let m = 0; m < 12; m++) {
+    if (monthPos[m] === undefined) continue;
+    const el = document.createElement("div");
+    el.className      = "heatmap-month-label";
+    el.textContent    = MONTH_NAMES[m];
+    el.style.position = "absolute";
+    el.style.left     = `${monthPos[m] * CELL}px`;
+    months.appendChild(el);
+  }
+
+  // ── Grid ──
+  const counts   = Object.values(logsByDate).map(a => a.length);
+  const maxCount = Math.max(...counts, 1);
+
+  grid.innerHTML = "";
+  colData.forEach(col => {
+    const colEl = document.createElement("div");
+    colEl.className = "heatmap-col";
+
+    col.forEach(d => {
+      const cell = document.createElement("div");
+      cell.className = "heatmap-cell";
+
+      const inYear   = d.getFullYear() === year;
+      const isFuture = d > today;
+
+      if (!inYear || isFuture) {
+        cell.style.opacity = "0.15";
+        colEl.appendChild(cell);
+        return;
+      }
+
+      const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const logs  = logsByDate[key] || [];
+      const count = logs.length;
+
+      let level = 0;
+      if (count > 0) level = Math.min(4, Math.ceil((count / maxCount) * 4));
+      cell.dataset.level = level;
+
+      if (d.toDateString() === new Date().toDateString()) cell.classList.add("is-today");
+
+      const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      cell.dataset.tip = count > 0 ? `${count} log${count > 1 ? "s" : ""} · ${dateStr}` : dateStr;
+
+      if (count > 0) {
+        cell.classList.add("has-log");
+        cell.addEventListener("click", () => openModal(logs[logs.length - 1].id));
+      }
+
+      colEl.appendChild(cell);
+    });
+
+    grid.appendChild(colEl);
+  });
+}
 
   // ── Dashboard loader ───────────────────────────────────────────────────
   async function loadDashboard() {
