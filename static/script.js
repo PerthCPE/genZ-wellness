@@ -376,14 +376,14 @@ if (document.getElementById("statTotal")) {
   months.style.minWidth = `${DAY_LABEL_W + colData.length * CELL}px`;
 
   for (let m = 0; m < 12; m++) {
-    if (monthPos[m] === undefined) continue;
-    const el = document.createElement("div");
-    el.className      = "heatmap-month-label";
-    el.textContent    = MONTH_NAMES[m];
-    el.style.position = "absolute";
-    const colOffset = (m === 0) ? 1 : 0;
-    el.style.left = `${(monthPos[m] + colOffset) * CELL}px`;
-  }
+  if (monthPos[m] === undefined) continue;
+  const el = document.createElement("div");
+  el.className      = "heatmap-month-label";
+  el.textContent    = MONTH_NAMES[m];
+  el.style.position = "absolute";
+  el.style.left     = `${monthPos[m] * CELL}px`;
+  months.appendChild(el); // ← บรรทัดนี้หายไป!
+}
 
   // ── Grid ──
   const counts   = Object.values(logsByDate).map(a => a.length);
