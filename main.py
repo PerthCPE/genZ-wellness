@@ -60,6 +60,7 @@ class MoodLog(BaseModel):
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
 @app.get("/")
+@app.head("/")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
