@@ -528,23 +528,7 @@ if (document.getElementById("statTotal")) {
       const breakdown = s.mood_breakdown || {};
       const max = Math.max(...Object.values(breakdown), 1);
       const topMood = Object.entries(breakdown).sort((a,b) => b[1]-a[1])[0];
-      // ── Running stats this month ──
-      const now = new Date();
-      const thisMonth = allLogs.filter(l => {
-        const d = new Date(l.timestamp);
-        return d.getMonth() === now.getMonth() &&
-               d.getFullYear() === now.getFullYear() &&
-               l.workout?.type === "run";
-      });
 
-      const totalKm  = thisMonth.reduce((sum, l) => sum + (l.workout?.distance_km || 0), 0);
-      const totalMin = thisMonth.reduce((sum, l) => sum + (l.workout?.duration_min || 0), 0);
-      const totalHrs = (totalMin / 60).toFixed(1);
-
-      const distEl = document.getElementById("statRunDist");
-      const durEl  = document.getElementById("statRunDur");
-      if (distEl) distEl.textContent = totalKm.toFixed(1);
-      if (durEl)  durEl.textContent  = totalHrs;
 
       const list = document.getElementById("breakdownList");
       if (!Object.keys(breakdown).length) {
@@ -567,12 +551,42 @@ if (document.getElementById("statTotal")) {
   }
 
   // ── Logs ───────────────────────────────────────────────────────────────
-  async function loadLogs() {
+async function loadLogs() {
     try {
       allLogs = await fetch("/logs").then(r => r.json());
       renderLogs();
       buildFilters();
+      updateRunStats();   // ← เพิ่มบรรทัดนี้
+      updateTopMood();    // ← เพิ่มบรรทัดนี้
     } catch {}
+  }
+
+  function updateRunStats() {
+    const now = new Date();
+    const thisMonth = allLogs.filter(l => {
+      const d = new Date(l.timestamp);
+      return d.getMonth() === now.getMonth() &&
+             d.getFullYear() === now.getFullYear() &&
+             l.workout?.type === "run";
+    });
+
+    const totalKm  = thisMonth.reduce((sum, l) => sum + (l.workout?.distance_km || 0), 0);
+    const totalMin = thisMonth.reduce((sum, l) => sum + (l.workout?.duration_min || 0), 0);
+    const totalHrs = (totalMin / 60).toFixed(1);
+
+    const distEl = document.getElementById("statRunDist");
+    const durEl  = document.getElementById("statRunDur");
+    if (distEl) distEl.textContent = totalKm.toFixed(1);
+    if (durEl)  durEl.textContent  = totalHrs;
+  }
+
+  function updateTopMood() {
+    if (!allLogs.length) return;
+    const breakdown = {};
+    allLogs.forEach(l => {
+      breakdown[l.mood] = (breakdown[l.mood] || 0) + 1;
+    });
+    const topMood = Object.entries(breakdown).sort((a,b) => b[1]-a[1])[0];
   }
 
   function renderLogs() {
