@@ -954,6 +954,7 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   margin-bottom: 4px;
   position: relative;
   height: 16px;
+  margin-left: 28px;
 }
 
 .heatmap-month-label {

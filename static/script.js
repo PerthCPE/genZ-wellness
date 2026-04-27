@@ -382,8 +382,7 @@ if (document.getElementById("statTotal")) {
     el.textContent    = MONTH_NAMES[m];
     el.style.position = "absolute";
     const offset = (m === 0 && jan1.getDay() > 0) ? CELL : 0;
-    el.style.left = `${DAY_LABEL_W + monthPos[m] * CELL + offset}px`;
-    months.appendChild(el);
+    el.style.left = `${monthPos[m] * CELL}px`;
   }
 
   // ── Grid ──
