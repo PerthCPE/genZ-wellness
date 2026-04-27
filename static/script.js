@@ -381,7 +381,8 @@ if (document.getElementById("statTotal")) {
     el.className      = "heatmap-month-label";
     el.textContent    = MONTH_NAMES[m];
     el.style.position = "absolute";
-    el.style.left = `${DAY_LABEL_W + monthPos[m] * CELL + 2}px`;
+    const offset = (m === 0 && jan1.getDay() > 0) ? CELL : 0;
+    el.style.left = `${DAY_LABEL_W + monthPos[m] * CELL + offset}px`;
     months.appendChild(el);
   }
 
