@@ -342,6 +342,8 @@ if (document.getElementById("statTotal")) {
     } else {
       bmrSection.style.display = "none";
     }
+
+    document.getElementById("logModal").classList.add("open");
   };
 
   window.closeModal = function(e) {
