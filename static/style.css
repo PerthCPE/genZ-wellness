@@ -308,6 +308,37 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   margin-bottom: 32px;
 }
 
+.stats-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stats-grid-5 .stat-card:nth-child(1) { grid-column: 1 / span 2; }
+.stats-grid-5 .stat-card:nth-child(2) { grid-column: 3 / span 2; }
+.stats-grid-5 .stat-card:nth-child(3) { grid-column: 5 / span 2; }
+.stats-grid-5 .stat-card:nth-child(4) { grid-column: 2 / span 2; }
+.stats-grid-5 .stat-card:nth-child(5) { grid-column: 4 / span 2; }
+
+@media (max-width: 767px) {
+  .stats-grid-5 { grid-template-columns: repeat(3, 1fr); }
+  .stats-grid-5 .stat-card:nth-child(1) { grid-column: span 1; }
+  .stats-grid-5 .stat-card:nth-child(2) { grid-column: span 1; }
+  .stats-grid-5 .stat-card:nth-child(3) { grid-column: span 1; }
+  .stats-grid-5 .stat-card:nth-child(4) { grid-column: 1 / span 1; }
+  .stats-grid-5 .stat-card:nth-child(5) { grid-column: 2 / span 1; }
+}
+
+@media (max-width: 479px) {
+  .stats-grid-5 { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stats-grid-5 .stat-card:nth-child(1) { grid-column: span 1; }
+  .stats-grid-5 .stat-card:nth-child(2) { grid-column: span 1; }
+  .stats-grid-5 .stat-card:nth-child(3) { grid-column: span 2; }
+  .stats-grid-5 .stat-card:nth-child(4) { grid-column: span 1; }
+  .stats-grid-5 .stat-card:nth-child(5) { grid-column: span 1; }
+}
+
 .stat-card {
   background: var(--glass);
   border: 1px solid var(--border);
@@ -1111,7 +1142,7 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
 .bmr-stat-val {
   font-family: 'Syne', sans-serif;
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 700;
   background: var(--grad);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1198,7 +1229,7 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
 .bmr-result-val {
   font-family: 'Syne', sans-serif;
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #fff;
   text-shadow: 0 0 12px rgba(167,139,250,0.5);
   line-height: 1;
