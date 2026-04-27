@@ -300,7 +300,48 @@ if (document.getElementById("statTotal")) {
       workoutSection.style.display = "none";
     }
 
-    document.getElementById("logModal").classList.add("open");
+    // ── BMR / TDEE ──
+    const bmrSection = document.getElementById("modalBmrSection");
+    const w2 = log.weight;
+    const h2 = log.height;
+
+    if (w2 && h2) {
+      bmrSection.style.display = "block";
+
+      // Body stats
+      document.getElementById("modalBodyStats").innerHTML = `
+        <div class="bmr-stat-item">
+          <span class="bmr-stat-val">${w2}</span>
+          <span class="bmr-stat-unit">kg</span>
+          <span class="bmr-stat-label">Weight</span>
+        </div>
+        <div class="bmr-stat-item">
+          <span class="bmr-stat-val">${h2}</span>
+          <span class="bmr-stat-unit">cm</span>
+          <span class="bmr-stat-label">Height</span>
+        </div>
+        <div class="bmr-stat-item">
+          <span class="bmr-stat-val">${(w2 / ((h2/100) ** 2)).toFixed(1)}</span>
+          <span class="bmr-stat-unit"></span>
+          <span class="bmr-stat-label">BMI</span>
+        </div>`;
+
+      // Store for recalculation
+      window._bmrData = { weight: w2, height: h2, gender: "male", mul: 1.2 };
+      calcBmr();
+
+      // Activity chips
+      document.querySelectorAll(".bmr-chip[data-mul]").forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll(".bmr-chip[data-mul]").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          window._bmrData.mul = parseFloat(btn.dataset.mul);
+          calcBmr();
+        };
+      });
+    } else {
+      bmrSection.style.display = "none";
+    }
   };
 
   window.closeModal = function(e) {
@@ -312,6 +353,42 @@ if (document.getElementById("statTotal")) {
     if (e.key === "Escape") document.getElementById("logModal")?.classList.remove("open");
   });
 
+  // ── BMR Calculator ────────────────────────────────────────────────────
+  function calcBmr() {
+    const { weight, height, gender, mul } = window._bmrData || {};
+    if (!weight || !height) return;
+
+    // Boer formula LBM
+    let lbm;
+    if (gender === "male") {
+      lbm = (0.407 * weight) + (0.267 * height) - 19.2;
+    } else {
+      lbm = (0.252 * weight) + (0.473 * height) - 48.3;
+    }
+
+    // Mifflin-St Jeor (ใช้ age 25 default ถ้าไม่มี)
+    const age = window._bmrData.age || 25;
+    let bmr;
+    if (gender === "male") {
+      bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    } else {
+      bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+    }
+
+    const tdee = bmr * mul;
+
+    document.getElementById("modalBMR").textContent  = Math.round(bmr).toLocaleString();
+    document.getElementById("modalTDEE").textContent = Math.round(tdee).toLocaleString();
+    document.getElementById("modalLBM").textContent  = lbm.toFixed(1);
+  }
+
+  window.setBmrGender = function(g) {
+    if (!window._bmrData) return;
+    window._bmrData.gender = g;
+    document.getElementById("bmrMale").classList.toggle("active", g === "male");
+    document.getElementById("bmrFemale").classList.toggle("active", g === "female");
+    calcBmr();
+  };
 
   // ── Heatmap ────────────────────────────────────────────────────────────
   function renderHeatmap() {

@@ -1089,3 +1089,145 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   gap: 12px;
 }
 
+/* ── BMR / TDEE Modal Section ───────────────────────────────────────── */
+.bmr-stats-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.bmr-stat-item {
+  flex: 1;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bmr-stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bmr-stat-unit {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.bmr-stat-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+/* Activity chips */
+.bmr-activity-wrap { margin-bottom: 4px; }
+.bmr-gender-wrap   { margin-top: 14px; }
+
+.bmr-activity-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.bmr-activity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bmr-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.bmr-chip:hover {
+  border-color: var(--p1);
+  color: var(--neon);
+}
+
+.bmr-chip.active {
+  background: rgba(139,92,246,0.15);
+  border-color: var(--p1);
+  color: var(--neon);
+}
+
+/* Result grid */
+.bmr-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.bmr-result-card {
+  background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.05));
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.bmr-result-icon { font-size: 1.2rem; }
+
+.bmr-result-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(167,139,250,0.5);
+  line-height: 1;
+}
+
+.bmr-result-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--neon);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bmr-result-sub {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+/* Note */
+.bmr-note {
+  margin-top: 12px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+}
+
+@media (max-width: 479px) {
+  .bmr-result-grid { grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .bmr-result-val  { font-size: 1.1rem; }
+  .bmr-stats-row   { gap: 8px; }
+}

@@ -158,10 +158,69 @@
       <div class="modal-note" id="modalNote"></div>
     </div>
 
-    <!-- Workout -->
+<!-- Workout -->
     <div class="modal-section" id="modalWorkoutSection" style="display:none">
       <div class="modal-label">Workout</div>
       <div id="modalWorkoutContent"></div>
+    </div>
+
+    <!-- BMR / TDEE -->
+    <div class="modal-section" id="modalBmrSection" style="display:none">
+      <div class="modal-label">Body Stats & Calories</div>
+
+      <!-- Body stats row -->
+      <div class="bmr-stats-row" id="modalBodyStats"></div>
+
+      <div class="modal-divider" style="margin:14px 0"></div>
+
+      <!-- Activity selector -->
+      <div class="bmr-activity-wrap">
+        <div class="bmr-activity-label">Activity Level</div>
+        <div class="bmr-activity-chips" id="bmrActivityChips">
+          <button class="bmr-chip active" data-mul="1.2">Sedentary</button>
+          <button class="bmr-chip" data-mul="1.375">Light</button>
+          <button class="bmr-chip" data-mul="1.55">Moderate</button>
+          <button class="bmr-chip" data-mul="1.725">Very Active</button>
+          <button class="bmr-chip" data-mul="1.9">Athlete</button>
+        </div>
+      </div>
+
+      <div class="modal-divider" style="margin:14px 0"></div>
+
+      <!-- Results grid -->
+      <div class="bmr-result-grid">
+        <div class="bmr-result-card">
+          <div class="bmr-result-icon">🔥</div>
+          <div class="bmr-result-val" id="modalBMR">–</div>
+          <div class="bmr-result-label">BMR</div>
+          <div class="bmr-result-sub">kcal / day</div>
+        </div>
+        <div class="bmr-result-card">
+          <div class="bmr-result-icon">⚡</div>
+          <div class="bmr-result-val" id="modalTDEE">–</div>
+          <div class="bmr-result-label">TDEE</div>
+          <div class="bmr-result-sub">kcal / day</div>
+        </div>
+        <div class="bmr-result-card">
+          <div class="bmr-result-icon">💪</div>
+          <div class="bmr-result-val" id="modalLBM">–</div>
+          <div class="bmr-result-label">LBM</div>
+          <div class="bmr-result-sub">kg (est.)</div>
+        </div>
+      </div>
+
+      <!-- Gender selector -->
+      <div class="bmr-gender-wrap">
+        <div class="bmr-activity-label">Sex (for formula)</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="bmr-chip active" id="bmrMale" onclick="setBmrGender('male')">♂ Male</button>
+          <button class="bmr-chip" id="bmrFemale" onclick="setBmrGender('female')">♀ Female</button>
+        </div>
+      </div>
+
+      <div class="bmr-note">
+        * BMR ใช้สูตร Mifflin-St Jeor · LBM ประมาณจาก Boer formula
+      </div>
     </div>
   </div>
 </div>
