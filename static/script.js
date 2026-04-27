@@ -118,9 +118,6 @@ if (document.getElementById("moodGrid")) {
   // ── Collect workout data ───────────────────────────────────────────────
   function collectWorkout() {
     const type = workoutSelect.value;
-    // collect weight & height
-    const height = parseFloat(document.getElementById("inputHeight").value) || null;
-    const weight = parseFloat(document.getElementById("inputWeight").value) || null;
     if (!type) return null;
 
     if (type === "weight") {
@@ -152,11 +149,13 @@ if (document.getElementById("moodGrid")) {
   }
 
   // ── Submit ─────────────────────────────────────────────────────────────
-  document.getElementById("submitBtn").addEventListener("click", async () => {
+document.getElementById("submitBtn").addEventListener("click", async () => {
     if (!selectedMood) return;
     const note = document.getElementById("noteInput").value.trim();
     const energy = parseInt(slider.value);
     const workout = collectWorkout();
+    const weight = parseFloat(document.getElementById("inputWeight")?.value) || null;
+    const height = parseFloat(document.getElementById("inputHeight")?.value) || null;
 
     try {
       const res = await fetch("/logs", {
