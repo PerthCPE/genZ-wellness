@@ -579,6 +579,11 @@ async function loadLogs() {
     const durEl  = document.getElementById("statRunDur");
     if (distEl) distEl.textContent = totalKm.toFixed(1);
     if (durEl)  durEl.textContent  = totalHrs;
+
+    // Latest weight
+    const lastWithWeight = [...allLogs].reverse().find(l => l.weight);
+    const weightEl = document.getElementById("statWeight");
+    if (weightEl) weightEl.textContent = lastWithWeight ? lastWithWeight.weight : "–";
   }
 
   function updateTopMood() {
