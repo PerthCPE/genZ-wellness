@@ -118,6 +118,9 @@ if (document.getElementById("moodGrid")) {
   // ── Collect workout data ───────────────────────────────────────────────
   function collectWorkout() {
     const type = workoutSelect.value;
+    // collect weight & height
+    const height = parseFloat(document.getElementById("inputHeight").value) || null;
+    const weight = parseFloat(document.getElementById("inputWeight").value) || null;
     if (!type) return null;
 
     if (type === "weight") {
@@ -159,7 +162,7 @@ if (document.getElementById("moodGrid")) {
       const res = await fetch("/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mood: selectedMood, energy, note: note || null, workout })
+        body: JSON.stringify({ mood: selectedMood, energy, note: note || null, workout, weight, height })
       });
       const data = await res.json();
       if (res.ok) {
@@ -317,12 +320,14 @@ if (document.getElementById("statTotal")) {
   const title  = document.getElementById("heatmapTitle");
   if (!grid) return;
 
-  const CELL = 13; // 11px + 2px gap
+  const CELL = 13; // 11px cell + 2px gap
+  const DAY_LABEL_W = 28; // ความกว้าง heatmap-days column
 
   const year  = new Date().getFullYear();
   const today = new Date();
   today.setHours(23, 59, 59, 999);
 
+  // Group logs by date
   const logsByDate = {};
   allLogs.forEach(l => {
     const d   = new Date(l.timestamp);
@@ -334,6 +339,7 @@ if (document.getElementById("statTotal")) {
   const totalLogs = allLogs.filter(l => new Date(l.timestamp).getFullYear() === year).length;
   title.textContent = `${totalLogs} log${totalLogs !== 1 ? "s" : ""} in ${year}`;
 
+  // Start from Sunday before Jan 1
   const jan1     = new Date(year, 0, 1);
   const startDay = new Date(jan1);
   startDay.setDate(jan1.getDate() - jan1.getDay());
@@ -363,18 +369,19 @@ if (document.getElementById("statTotal")) {
     colIndex++;
   }
 
-  // ── Month labels ──
+  // ── Month labels — offset ต้องบวก DAY_LABEL_W ด้วย ──
   months.innerHTML = "";
   months.style.position = "relative";
   months.style.height   = "16px";
-  months.style.minWidth = `${colData.length * CELL}px`;
+  months.style.minWidth = `${DAY_LABEL_W + colData.length * CELL}px`;
+
   for (let m = 0; m < 12; m++) {
     if (monthPos[m] === undefined) continue;
     const el = document.createElement("div");
     el.className      = "heatmap-month-label";
     el.textContent    = MONTH_NAMES[m];
     el.style.position = "absolute";
-    el.style.left     = `${monthPos[m] * CELL}px`;
+    el.style.left     = `${DAY_LABEL_W + monthPos[m] * CELL}px`;
     months.appendChild(el);
   }
 
@@ -411,7 +418,9 @@ if (document.getElementById("statTotal")) {
       if (d.toDateString() === new Date().toDateString()) cell.classList.add("is-today");
 
       const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      cell.dataset.tip = count > 0 ? `${count} log${count > 1 ? "s" : ""} · ${dateStr}` : dateStr;
+      cell.dataset.tip = count > 0
+        ? `${count} log${count > 1 ? "s" : ""} · ${dateStr}`
+        : dateStr;
 
       if (count > 0) {
         cell.classList.add("has-log");

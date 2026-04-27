@@ -951,12 +951,9 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
 }
 
 .heatmap-months {
-  display: flex;
-  padding-left: 28px;
   margin-bottom: 4px;
   position: relative;
   height: 16px;
-  min-width: max-content;
 }
 
 .heatmap-month-label {
@@ -1083,3 +1080,11 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   .legend-cell  { width: 10px; height: 10px; }
   .heatmap-days span { height: 10px; line-height: 10px; }
 }
+
+/* Weight & Height grid */
+.wh-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+

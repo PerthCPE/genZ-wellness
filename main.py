@@ -55,6 +55,8 @@ class MoodLog(BaseModel):
     energy:  int
     note:    Optional[str] = None
     workout: Optional[dict] = None
+    weight:  Optional[float] = None
+    height:  Optional[float] = None 
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
 @app.get("/")
@@ -74,10 +76,11 @@ async def add_log(log: MoodLog, response: Response,
     uid = get_user_id(response, user_id)
     conn = get_conn(); cur = conn.cursor()
     cur.execute(
-        "INSERT INTO mood_logs (user_id,mood,energy,note,workout) VALUES (%s,%s,%s,%s,%s) RETURNING *",
+        "INSERT INTO mood_logs (user_id,mood,energy,note,workout,weight,height) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *",
         (uid, log.mood.lower().strip(), log.energy, log.note,
-         json.dumps(log.workout) if log.workout else None)
-    )
+        json.dumps(log.workout) if log.workout else None,
+        log.weight, log.height)
+)
     row = dict(cur.fetchone())
     conn.commit(); conn.close()
     row["timestamp"] = row["timestamp"].astimezone(TZ).isoformat()

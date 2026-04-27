@@ -66,6 +66,23 @@
   <div class="card" style="margin-bottom: 20px; animation-delay: 0.15s;">
     <div class="card-title">Workout</div>
     <div class="card-content">
+      <!-- Weight & Height -->
+      <div class="wh-grid" style="margin-bottom:16px">
+        <div class="run-field">
+          <label>Weight</label>
+          <div class="run-input-wrap">
+            <input type="number" id="inputWeight" placeholder="0" min="1" class="run-input" />
+            <span class="run-unit">kg</span>
+          </div>
+        </div>
+        <div class="run-field">
+          <label>Height</label>
+          <div class="run-input-wrap">
+            <input type="number" id="inputHeight" placeholder="0" min="1" class="run-input" />
+            <span class="run-unit">cm</span>
+          </div>
+        </div>
+      </div>
       <label for="workout">Select Activity</label>
       <select name="workout" id="workout" class="combo">
         <option value="">-- Choose workout --</option>
