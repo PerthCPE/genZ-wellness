@@ -213,8 +213,14 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
         </tr>`;
         if (runDuration) runDuration.value = "";
         if (runDistance) runDistance.value = "";
-         // reset date back to today
-        if (workoutDateEl) workoutDateEl.valueAsDate = new Date();
+        // reset date back to today
+        const wDateEl = document.getElementById("workoutDate");
+        if (wDateEl) {
+          const now = new Date();
+          wDateEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+          window._logDateTime = now.toISOString();
+        }
+
         const paceEl = document.getElementById("paceDisplay");
         if (paceEl) paceEl.textContent = "–";
         updateBtn();
