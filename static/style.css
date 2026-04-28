@@ -469,6 +469,51 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
   margin-bottom: 12px;
 }
 
+/* ── Date Input ─────────────────────────────────────────────────────── */
+.workout-date-wrap {
+  margin-bottom: 16px;
+}
+
+.workout-date-wrap .field-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.date-input {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.date-input:focus {
+  border-color: rgba(139,92,246,0.5);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.08);
+}
+
+/* แก้ calendar icon สี */
+.date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+.date-input::-webkit-calendar-picker-indicator:hover {
+  filter: invert(0.8);
+}
+
 .exercise-table thead th {
   font-family: 'Syne', sans-serif;
   font-size: 0.7rem;

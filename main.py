@@ -51,12 +51,13 @@ def get_user_id(response: Response, user_id: Optional[str] = None) -> str:
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 class MoodLog(BaseModel):
-    mood:    str
-    energy:  int
-    note:    Optional[str] = None
-    workout: Optional[dict] = None
-    weight:  Optional[float] = None
-    height:  Optional[float] = None 
+    mood:     str
+    energy:   int
+    note:     Optional[str] = None
+    workout:  Optional[dict] = None
+    weight:   Optional[float] = None
+    height:   Optional[float] = None
+    log_date: Optional[str] = None
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
 @app.get("/")
@@ -75,12 +76,22 @@ async def add_log(log: MoodLog, response: Response,
     if not (1 <= log.energy <= 10):
         return JSONResponse({"error": "Energy must be between 1 and 10"}, status_code=422)
     uid = get_user_id(response, user_id)
+    
+    if log.log_date:
+        from datetime import date
+        chosen = datetime.strptime(log.log_date, "%Y-%m-%d").replace(
+            hour=12, minute=0, second=0, tzinfo=TZ
+        )
+        ts = chosen
+    else:
+        ts = datetime.now(TZ)
+    
     conn = get_conn(); cur = conn.cursor()
     cur.execute(
-        "INSERT INTO mood_logs (user_id,mood,energy,note,workout,weight,height) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *",
+        "INSERT INTO mood_logs (user_id,mood,energy,note,workout,weight,height,timestamp) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *",
         (uid, log.mood.lower().strip(), log.energy, log.note,
-        json.dumps(log.workout) if log.workout else None,
-        log.weight, log.height)
+         json.dumps(log.workout) if log.workout else None,
+         log.weight, log.height, ts)
 )
     row = dict(cur.fetchone())
     conn.commit(); conn.close()

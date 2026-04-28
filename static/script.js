@@ -64,6 +64,14 @@ if (document.getElementById("moodGrid")) {
   // ── Submit button state ────────────────────────────────────────────────
   function updateBtn() {
     document.getElementById("submitBtn").disabled = !selectedMood;
+     const workoutDateEl = document.getElementById("workoutDate");
+    if (workoutDateEl) {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm   = String(now.getMonth() + 1).padStart(2, "0");
+      const dd   = String(now.getDate()).padStart(2, "0");
+      workoutDateEl.value = `${yyyy}-${mm}-${dd}`;
+      workoutDateEl.max   = `${yyyy}-${mm}-${dd}`; // ไม่ให้เลือกอนาคต
   }
 
   // ── Workout selector ───────────────────────────────────────────────────
@@ -156,12 +164,21 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     const workout = collectWorkout();
     const weight = parseFloat(document.getElementById("inputWeight")?.value) || null;
     const height = parseFloat(document.getElementById("inputHeight")?.value) || null;
+    const logDate = document.getElementById("workoutDate")?.value || null;
 
     try {
       const res = await fetch("/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mood: selectedMood, energy, note: note || null, workout, weight, height })
+              body: JSON.stringify({ 
+        mood: selectedMood, 
+        energy, 
+        note: note || null, 
+        workout, 
+        weight, 
+        height,
+        log_date: logDate
+      })
       });
       const data = await res.json();
       if (res.ok) {
@@ -183,6 +200,8 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
         </tr>`;
         if (runDuration) runDuration.value = "";
         if (runDistance) runDistance.value = "";
+         // reset date back to today
+        if (workoutDateEl) workoutDateEl.valueAsDate = new Date();
         const paceEl = document.getElementById("paceDisplay");
         if (paceEl) paceEl.textContent = "–";
         updateBtn();
