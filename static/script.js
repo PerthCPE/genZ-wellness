@@ -74,9 +74,7 @@ if (document.getElementById("moodGrid")) {
       const min  = String(now.getMinutes()).padStart(2, "0");
 
       const dateEl = document.getElementById("workoutDate");
-      const timeEl = document.getElementById("workoutTime");
       if (dateEl) dateEl.value = `${dd}/${mm}/${yyyy}`;
-      if (timeEl) timeEl.value = `${hh}:${min}`;
 
       // เก็บ ISO format ไว้ส่ง API
       window._logDateTime = now.toISOString();
