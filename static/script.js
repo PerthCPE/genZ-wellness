@@ -62,9 +62,11 @@ if (document.getElementById("moodGrid")) {
   slider.addEventListener("input", () => { valDisplay.textContent = slider.value; });
 
   // ── Submit button state ────────────────────────────────────────────────
-  function updateBtn() {
+    function updateBtn() {
     document.getElementById("submitBtn").disabled = !selectedMood;
-// ── Set default date = today ──
+  }
+
+  // ── Set default date = today ──
   function updateDateTime() {
     const now  = new Date();
     const yyyy = now.getFullYear();
@@ -623,6 +625,8 @@ async function loadLogs() {
       breakdown[l.mood] = (breakdown[l.mood] || 0) + 1;
     });
     const topMood = Object.entries(breakdown).sort((a,b) => b[1]-a[1])[0];
+    const statTop = document.getElementById("statTop");
+    if (statTop) statTop.textContent = topMood ? MOOD_MAP[topMood[0]] : "–";
   }
 
   function renderLogs() {
