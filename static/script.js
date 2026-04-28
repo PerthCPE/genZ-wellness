@@ -66,26 +66,33 @@ if (document.getElementById("moodGrid")) {
     document.getElementById("submitBtn").disabled = !selectedMood;
   }
 
-  // ── Set default date = today ──
   function updateDateTime() {
-    const now  = new Date();
-    const yyyy = now.getFullYear();
-    const mm   = String(now.getMonth() + 1).padStart(2, "0");
-    const dd   = String(now.getDate()).padStart(2, "0");
+    // ใช้เวลาไทยจริงๆ ไม่ใช่ UTC
+    const now   = new Date();
+    const thNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+    const yyyy  = thNow.getFullYear();
+    const mm    = String(thNow.getMonth() + 1).padStart(2, "0");
+    const dd    = String(thNow.getDate()).padStart(2, "0");
+
     const dateEl = document.getElementById("workoutDate");
     if (dateEl && !dateEl.value) {
       dateEl.value = `${yyyy}-${mm}-${dd}`;
       dateEl.max   = `${yyyy}-${mm}-${dd}`;
     }
-    window._logDateTime = new Date(
-      document.getElementById("workoutDate")?.value || now
-    ).toISOString();
+    // เก็บ ISO พร้อม timezone offset +07:00
+    window._logDateTime = now.toISOString();
   }
 
   updateDateTime();
   document.getElementById("workoutDate")?.addEventListener("change", () => {
-  const val = document.getElementById("workoutDate").value;
-  if (val) window._logDateTime = new Date(val).toISOString();
+    const val = document.getElementById("workoutDate").value; // YYYY-MM-DD
+    if (val) {
+      // แปลงเป็นเวลาไทย 12:00 น. ของวันที่เลือก
+      const [y, m, d] = val.split("-").map(Number);
+      // +07:00 = offset 7 ชั่วโมง
+      const thDate = new Date(`${val}T12:00:00+07:00`);
+      window._logDateTime = thDate.toISOString();
+    }
   });
 
   // ── Workout selector ───────────────────────────────────────────────────
