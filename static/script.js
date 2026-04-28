@@ -64,24 +64,27 @@ if (document.getElementById("moodGrid")) {
   // ── Submit button state ────────────────────────────────────────────────
   function updateBtn() {
     document.getElementById("submitBtn").disabled = !selectedMood;
-      // ── Set date & time display ──
-    function updateDateTime() {
-      const now  = new Date();
-      const dd   = String(now.getDate()).padStart(2, "0");
-      const mm   = String(now.getMonth() + 1).padStart(2, "0");
-      const yyyy = now.getFullYear();
-      const hh   = String(now.getHours()).padStart(2, "0");
-      const min  = String(now.getMinutes()).padStart(2, "0");
-
-      const dateEl = document.getElementById("workoutDate");
-      if (dateEl) dateEl.value = `${dd}/${mm}/${yyyy}`;
-
-      // เก็บ ISO format ไว้ส่ง API
-      window._logDateTime = now.toISOString();
+// ── Set default date = today ──
+  function updateDateTime() {
+    const now  = new Date();
+    const yyyy = now.getFullYear();
+    const mm   = String(now.getMonth() + 1).padStart(2, "0");
+    const dd   = String(now.getDate()).padStart(2, "0");
+    const dateEl = document.getElementById("workoutDate");
+    if (dateEl && !dateEl.value) {
+      dateEl.value = `${yyyy}-${mm}-${dd}`;
+      dateEl.max   = `${yyyy}-${mm}-${dd}`;
+    }
+    window._logDateTime = new Date(
+      document.getElementById("workoutDate")?.value || now
+    ).toISOString();
   }
 
   updateDateTime();
-  setInterval(updateDateTime, 60000); // อัพเดตทุก 1 นาที
+  document.getElementById("workoutDate")?.addEventListener("change", () => {
+  const val = document.getElementById("workoutDate").value;
+  if (val) window._logDateTime = new Date(val).toISOString();
+  });
 
   // ── Workout selector ───────────────────────────────────────────────────
   const workoutSelect = document.getElementById("workout");
