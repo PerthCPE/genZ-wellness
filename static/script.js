@@ -64,15 +64,26 @@ if (document.getElementById("moodGrid")) {
   // ── Submit button state ────────────────────────────────────────────────
   function updateBtn() {
     document.getElementById("submitBtn").disabled = !selectedMood;
-     const workoutDateEl = document.getElementById("workoutDate");
-    if (workoutDateEl) {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm   = String(now.getMonth() + 1).padStart(2, "0");
+      // ── Set date & time display ──
+    function updateDateTime() {
+      const now  = new Date();
       const dd   = String(now.getDate()).padStart(2, "0");
-      workoutDateEl.value = `${yyyy}-${mm}-${dd}`;
-      workoutDateEl.max   = `${yyyy}-${mm}-${dd}`; // ไม่ให้เลือกอนาคต
+      const mm   = String(now.getMonth() + 1).padStart(2, "0");
+      const yyyy = now.getFullYear();
+      const hh   = String(now.getHours()).padStart(2, "0");
+      const min  = String(now.getMinutes()).padStart(2, "0");
+
+      const dateEl = document.getElementById("workoutDate");
+      const timeEl = document.getElementById("workoutTime");
+      if (dateEl) dateEl.value = `${dd}/${mm}/${yyyy}`;
+      if (timeEl) timeEl.value = `${hh}:${min}`;
+
+      // เก็บ ISO format ไว้ส่ง API
+      window._logDateTime = now.toISOString();
   }
+
+  updateDateTime();
+  setInterval(updateDateTime, 60000); // อัพเดตทุก 1 นาที
 
   // ── Workout selector ───────────────────────────────────────────────────
   const workoutSelect = document.getElementById("workout");
@@ -164,13 +175,12 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     const workout = collectWorkout();
     const weight = parseFloat(document.getElementById("inputWeight")?.value) || null;
     const height = parseFloat(document.getElementById("inputHeight")?.value) || null;
-    const logDate = document.getElementById("workoutDate")?.value || null;
-
+    const logDate = window._logDateTime || new Date().toISOString();    
     try {
       const res = await fetch("/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
+        body: JSON.stringify({ 
         mood: selectedMood, 
         energy, 
         note: note || null, 

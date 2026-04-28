@@ -78,11 +78,12 @@ async def add_log(log: MoodLog, response: Response,
     uid = get_user_id(response, user_id)
     
     if log.log_date:
-        from datetime import date
-        chosen = datetime.strptime(log.log_date, "%Y-%m-%d").replace(
-            hour=12, minute=0, second=0, tzinfo=TZ
-        )
-        ts = chosen
+        try:
+            # รับทั้ง ISO format และ YYYY-MM-DD
+            chosen = datetime.fromisoformat(log.log_date.replace("Z", "+00:00"))
+            ts = chosen.astimezone(TZ)
+        except Exception:
+            ts = datetime.now(TZ)
     else:
         ts = datetime.now(TZ)
     
